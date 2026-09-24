@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLMs vs Embeddings</title>
+  <meta name="description" content="A minimal comparison of prompted LLMs and embedding models on zero-shot topic classification.">
+  <style>
+    :root {
+      --bg: #fdfdfc;
+      --fg: #1c1c1a;
+      --muted: #5f5f5a;
+      --rule: #e3e2dd;
+      --accent: #2f5d8a;
+      --code-bg: #f1f0ec;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #161615;
+        --fg: #e8e7e3;
+        --muted: #a3a29c;
+        --rule: #33322f;
+        --accent: #8db4dc;
+        --code-bg: #232321;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font: 17px/1.6 Georgia, "Times New Roman", serif;
+    }
+    main { max-width: 42rem; margin: 0 auto; padding: 3rem 16px 4rem; }
+    h1 { font-size: 1.9rem; line-height: 1.25; margin: 0 0 .5rem; }
+    h2 {
+      font: 600 .8rem/1.4 system-ui, sans-serif;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 2.5rem 0 .75rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--rule);
+    }
+    .byline { color: var(--muted); font-size: .95rem; margin: 0; }
+    a { color: var(--accent); }
+    code {
+      font: .85em ui-monospace, Menlo, monospace;
+      background: var(--code-bg);
+      padding: .1em .3em;
+      border-radius: 3px;
+    }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: .5rem .75rem .5rem 0;
+      border-bottom: 1px solid var(--rule);
+    }
+    th { font: 600 .8rem system-ui, sans-serif; color: var(--muted); }
+    .pending {
+      border: 1px dashed var(--rule);
+      border-radius: 6px;
+      padding: 1rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Classification with LLMs vs Embedding Models</h1>
+  <p class="byline">
+    Xavier Collantes ·
+    <a href="https://github.com/xcollantes/categorize-research">Source</a>
+  </p>
+
+  <h2>Summary</h2>
+  <p>
+    Topic classification is commonly delegated to frontier LLMs through
+    zero-shot prompting. An embedding model offers a cheaper alternative:
+    the document and each candidate label are embedded, and the label with
+    the highest cosine similarity to the document is assigned. This
+    experiment asks whether the embedding approach matches a prompted LLM in
+    accuracy, and at what difference in cost and latency. Neither method
+    uses labelled training data.
+  </p>
+
+  <h2>Research questions</h2>
+  <ol>
+    <li>Does a zero-shot embedding classifier match a zero-shot prompted LLM
+      in accuracy and macro-F1?</li>
+    <li>What does each method cost, and how long does it take, per
+      document?</li>
+    <li>Does the classification task prefix recommended for
+      <code>gemini-embedding-2</code> measurably improve accuracy?</li>
+  </ol>
+
+  <h2>Method</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Condition</th><th>Model</th><th>Procedure</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>LLM</td>
+          <td>OpenAI model (Responses API)</td>
+          <td>Zero-shot prompt listing the candidate labels</td>
+        </tr>
+        <tr>
+          <td>Embedding</td>
+          <td><code>gemini-embedding-2</code></td>
+          <td>Nearest label by cosine similarity</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    Both conditions are scored on the same test set: 20 Newsgroups, four
+    classes (<code>comp.graphics</code>, <code>rec.sport.baseball</code>,
+    <code>sci.space</code>, <code>sci.electronics</code>), headers, footers
+    and quotes stripped, seed 67. Reported metrics are accuracy and macro-F1
+    with 95% bootstrap confidence intervals, cost per document, and latency
+    per document.
+  </p>
+
+  <h2>Results</h2>
+  <p class="pending">Results are pending; the experiment has not yet been
+    run.</p>
+
+  <h2>Prior work</h2>
+  <p>
+    This is a simplified reimplementation of
+    <a href="https://github.com/xcollantes/classify-llm-exp">classify-llm-exp</a>,
+    which trained a logistic regression over <code>gemini-embedding-001</code>
+    vectors and ablated its <code>task_type</code> parameter.
+  </p>
+</main>
+</body>
+</html>
