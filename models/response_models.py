@@ -6,8 +6,9 @@ from pydantic import BaseModel, Field
 
 Label = Literal["comp.graphics", "rec.sport.baseball", "sci.space", "sci.electronics"]
 
-# Reason: written from the newsgroup charters before any results were
-# seen, so they are not tuned on the test set.
+# Labels are from the dataset newsgroup.
+# This will be what the candidates be tested against and will be expected to
+# return.
 LABEL_DESCRIPTIONS: dict[Label, str] = {
     "comp.graphics": (
         "Computer graphics: rendering, 3D modeling, ray tracing, image "

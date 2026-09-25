@@ -46,10 +46,12 @@ class GeminiClient:
 
     def classify(self, prompt: str) -> Label | None:
         """Classify the prompt into one label; None if the model refuses."""
-        response: genai.GenerateContentResponse = self.client.models.generate_content(
+        response: types.GenerateContentResponse = self.client.models.generate_content(
             model=self.model_name,
             contents=prompt,
             config=types.GenerateContentConfig(
+                # To ensure 100% valid JSON objects, requests must include both
+                # a response_schema and response_mime_type: "application/json".
                 response_mime_type="application/json",
                 response_schema=LLMResponse,
             ),

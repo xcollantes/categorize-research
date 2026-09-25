@@ -14,8 +14,8 @@ load_dotenv()
 
 GEMINI_API_KEY: str = os.environ["GEMINI_API_KEY"]
 
-# Reason: gemini-embedding-2 takes the task as a text prefix, not a
-# task_type config.
+# gemini-embedding-2 takes the task as a text prefix, not a task_type config.
+# https://ai.google.dev/gemini-api/docs/embeddings#task-types-embeddings-2
 CLASSIFICATION_PREFIX: str = "task: classification | query: "
 
 
