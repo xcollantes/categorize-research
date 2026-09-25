@@ -12,26 +12,26 @@ from src.utils.pull_data import SEED
 LABELS: tuple[str, ...] = get_args(Label)
 N_RESAMPLES: int = 1000
 
-Gold = Sequence[str]
+Expected = Sequence[str]
 Preds = Sequence[str | None]
-Metric = Callable[[Gold, Preds], float]
+Metric = Callable[[Expected, Preds], float]
 
 
-def accuracy(y_true: Gold, y_pred: Preds) -> float:
-    """Return the fraction of predictions equal to the gold label."""
+def accuracy(y_true: Expected, y_pred: Preds) -> float:
+    """Return the fraction of predictions equal to the expected label."""
     return sum(t == p for t, p in zip(y_true, y_pred)) / len(y_true)
 
 
 def macro_f1(
-    y_true: Gold, y_pred: Preds, labels: Sequence[str] = LABELS
+    y_true: Expected, y_pred: Preds, labels: Sequence[str] = LABELS
 ) -> float:
     """Return the unweighted mean of per-class F1 over `labels`.
 
     A prediction outside `labels` (such as None for a refusal) counts as
-    a miss for its gold class and never as an extra class.
+    a miss for its expected class and never as an extra class.
 
     Args:
-        y_true: Gold labels.
+        y_true: Expected labels.
         y_pred: Predicted labels, None where no label was returned.
         labels: The classes to average over.
 
@@ -54,7 +54,7 @@ def macro_f1(
 
 
 def bootstrap_ci(
-    y_true: Gold, y_pred: Preds, metric: Metric, seed: int = SEED
+    y_true: Expected, y_pred: Preds, metric: Metric, seed: int = SEED
 ) -> tuple[float, float]:
     """Return the 95% percentile bootstrap interval of `metric`."""
     return _ci([
@@ -64,7 +64,7 @@ def bootstrap_ci(
 
 
 def paired_diff_ci(
-    y_true: Gold, pred_a: Preds, pred_b: Preds, metric: Metric,
+    y_true: Expected, pred_a: Preds, pred_b: Preds, metric: Metric,
     seed: int = SEED,
 ) -> tuple[float, float]:
     """Return the 95% bootstrap interval of metric(A) - metric(B).

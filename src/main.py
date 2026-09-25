@@ -157,8 +157,8 @@ def run(pairs: list[tuple[str, str]], path: pathlib.Path) -> list[dict]:
 
     # "x" refuses to open an existing file, so no run overwrites another.
     with path.open("x", encoding="utf-8") as f:
-        for i, (text, gold) in enumerate(pairs):
-            row: dict = {"index": i, "gold": gold}
+        for i, (text, expected) in enumerate(pairs):
+            row: dict = {"index": i, "expected": expected}
 
             for name, classify in conditions.items():
                 # wrap in a timer and call function for core experiment.
@@ -183,7 +183,7 @@ def run(pairs: list[tuple[str, str]], path: pathlib.Path) -> list[dict]:
 def summarize(rows: list[dict]) -> None:
     """Print metrics per condition and paired differences vs embedding."""
 
-    gold: list[str] = [r["gold"] for r in rows]
+    expected: list[str] = [r["expected"] for r in rows]
     preds: dict[str, list[str]] = {
         c.name: [r[c.name]["label"] for r in rows] for c in CANDIDATES
     }
@@ -204,8 +204,8 @@ def summarize(rows: list[dict]) -> None:
 
         logger.info(
             f"\n{c.name} ({c.model_id})\n"
-            f"  Accuracy:     {_with_ci(gold, preds[c.name], accuracy)}\n"
-            f"  Macro-F1:     {_with_ci(gold, preds[c.name], macro_f1)}\n"
+            f"  Accuracy:     {_with_ci(expected, preds[c.name], accuracy)}\n"
+            f"  Macro-F1:     {_with_ci(expected, preds[c.name], macro_f1)}\n"
             ""
             f"  Refusals:     {refusals}\n"
             f"  Errors:       {errors}\n"
@@ -218,15 +218,15 @@ def summarize(rows: list[dict]) -> None:
 
     base = preds[EMBED.name]
     for c in (GPT, GEMINI):
-        diff = macro_f1(gold, preds[c.name]) - macro_f1(gold, base)
-        low, high = paired_diff_ci(gold, preds[c.name], base, macro_f1)
+        diff = macro_f1(expected, preds[c.name]) - macro_f1(expected, base)
+        low, high = paired_diff_ci(expected, preds[c.name], base, macro_f1)
 
         logger.info(f"  {c.name} - embed  {diff:+.3f}  [{low:+.3f}, {high:+.3f}]")
 
 
-def _with_ci(gold: list[str], pred: list, metric: Callable) -> str:
-    low, high = bootstrap_ci(gold, pred, metric)
-    return f"{metric(gold, pred):.3f}  [{low:.3f}, {high:.3f}]"
+def _with_ci(expected: list[str], pred: list, metric: Callable) -> str:
+    low, high = bootstrap_ci(expected, pred, metric)
+    return f"{metric(expected, pred):.3f}  [{low:.3f}, {high:.3f}]"
 
 
 def main() -> None:
