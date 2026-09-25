@@ -118,13 +118,14 @@ def build_prompt(text: str) -> str:
     return PROMPT.format(labels=LABEL_LIST, text=text)
 
 
-def timed(classify: Callable[[str], Prediction], text: str) -> dict:
+def timed_classify(classify: Callable[[str], Prediction], text: str) -> dict:
     """Run one classification and record its label, tokens and latency."""
     start: float = time.perf_counter()
 
     try:
         pred: Prediction = classify(text)
         error: str | None = None
+
     except API_ERRORS as e:
         logger.warning("API error: %r", e)
         pred, error = Prediction(None, 0, 0), repr(e)
@@ -145,6 +146,7 @@ def run(pairs: list[tuple[str, str]], path: pathlib.Path) -> list[dict]:
         zip(LABEL_DESCRIPTIONS, embed.embed(list(LABEL_DESCRIPTIONS.values())))
     )
 
+    # build with the callable function.
     conditions: dict[str, Callable[[str], Prediction]] = {
         GPT.name: lambda t: gpt.classify(build_prompt(t)),
         GEMINI.name: lambda t: gemini.classify(build_prompt(t)),
@@ -159,7 +161,8 @@ def run(pairs: list[tuple[str, str]], path: pathlib.Path) -> list[dict]:
             row: dict = {"index": i, "gold": gold}
 
             for name, classify in conditions.items():
-                row[name] = timed(classify, text)
+                # wrap in a timer and call function for core experiment.
+                row[name] = timed_classify(classify, text)
 
             # Counted outside the timer so latency is the embed call alone.
             try:
