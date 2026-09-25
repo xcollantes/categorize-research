@@ -1,9 +1,36 @@
 """API response expectations for LLM responses."""
 
+from typing import Literal, get_args
+
 from pydantic import BaseModel, Field
+
+Label = Literal["comp.graphics", "rec.sport.baseball", "sci.space", "sci.electronics"]
+
+# Reason: written from the newsgroup charters before any results were
+# seen, so they are not tuned on the test set.
+LABEL_DESCRIPTIONS: dict[Label, str] = {
+    "comp.graphics": (
+        "Computer graphics: rendering, 3D modeling, ray tracing, image "
+        "file formats, image processing, and graphics software and "
+        "algorithms."
+    ),
+    "rec.sport.baseball": (
+        "Baseball: teams, players, games, pitching and hitting, "
+        "statistics, trades, and standings."
+    ),
+    "sci.space": (
+        "Space and spaceflight: NASA, rocket launches, satellites, space "
+        "stations, planetary missions, astronomy, and space policy."
+    ),
+    "sci.electronics": (
+        "Electronics: circuit design, electronic components, soldering, "
+        "power supplies, amplifiers, radio, and test equipment."
+    ),
+}
+assert LABEL_DESCRIPTIONS.keys() == set(get_args(Label))
 
 
 class LLMResponse(BaseModel):
-    """Class representing the expected structure of an LLM response."""
+    """Expected structure of an LLM classification reply."""
 
-    output_text: str = Field(description="The generated text output from the LLM.")
+    label: Label = Field(description="The single best-matching topic.")
