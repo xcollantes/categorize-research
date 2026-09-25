@@ -1,6 +1,6 @@
 """API response expectations for LLM responses."""
 
-from typing import Literal, get_args
+from typing import Literal, NamedTuple, get_args
 
 from pydantic import BaseModel, Field
 
@@ -35,3 +35,11 @@ class LLMResponse(BaseModel):
     """Expected structure of an LLM classification reply."""
 
     label: Label = Field(description="The single best-matching topic.")
+
+
+class Prediction(NamedTuple):
+    """One classification and the tokens it was billed for."""
+
+    label: str | None
+    input_tokens: int
+    output_tokens: int

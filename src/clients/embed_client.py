@@ -47,21 +47,29 @@ class EmbedClient:
 
         return [e.values for e in result.embeddings]
 
-    def classify(self, text: str, labels: list[str]) -> str:
+    def classify(self, text: str, label_vecs: dict[str, list[float]]) -> str:
         """Return the label whose embedding is closest to the text.
 
         Args:
             text: The text to classify.
-            labels: List of possible labels.
+            label_vecs: Label to its precomputed embedding, so labels are
+                embedded once per run instead of once per text.
 
         Returns:
             The label whose embedding is closest to the text.
         """
 
-        text_vec, *label_vecs = self.embed([text, *labels])
-        scores: list[float] = [_cosine(text_vec, v) for v in label_vecs]
+        (text_vec,) = self.embed([text])
 
-        return labels[scores.index(max(scores))]
+        return max(label_vecs, key=lambda k: _cosine(text_vec, label_vecs[k]))
+
+    def count_tokens(self, text: str) -> int:
+        """Return the billed input tokens for embedding `text`."""
+        result = self.client.models.count_tokens(
+            model=self.model_name, contents=CLASSIFICATION_PREFIX + text
+        )
+
+        return result.total_tokens or 0
 
 
 def _cosine(a: list[float], b: list[float]) -> float:

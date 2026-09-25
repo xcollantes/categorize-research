@@ -8,7 +8,7 @@ from google import genai
 from google.genai import types
 from openai import OpenAI
 
-from src.models.response_models import Label, LLMResponse
+from src.models.response_models import LLMResponse, Prediction
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -25,8 +25,8 @@ class GPTClient:
         self.model_name = model_name
         self.client: OpenAI = OpenAI(api_key=OPENAI_API_KEY)
 
-    def classify(self, prompt: str) -> Label | None:
-        """Classify the prompt into one label; None if the model refuses."""
+    def classify(self, prompt: str) -> Prediction:
+        """Classify the prompt into one label; label is None on refusal."""
         response = self.client.responses.parse(
             model=self.model_name,
             input=prompt,
@@ -34,7 +34,13 @@ class GPTClient:
         )
 
         parsed: LLMResponse | None = response.output_parsed
-        return parsed.label if parsed else None
+        usage = response.usage
+        # Reasoning tokens are already included in output_tokens.
+        return Prediction(
+            parsed.label if parsed else None,
+            usage.input_tokens if usage else 0,
+            usage.output_tokens if usage else 0,
+        )
 
 
 class GeminiClient:
@@ -44,8 +50,8 @@ class GeminiClient:
         self.model_name = model_name
         self.client: genai.Client = genai.Client(api_key=GEMINI_API_KEY)
 
-    def classify(self, prompt: str) -> Label | None:
-        """Classify the prompt into one label; None if the model refuses."""
+    def classify(self, prompt: str) -> Prediction:
+        """Classify the prompt into one label; label is None on refusal."""
         response: types.GenerateContentResponse = self.client.models.generate_content(
             model=self.model_name,
             contents=prompt,
@@ -58,4 +64,14 @@ class GeminiClient:
         )
 
         parsed: LLMResponse | None = response.parsed
-        return parsed.label if parsed else None
+        usage = (
+            response.usage_metadata
+            or types.GenerateContentResponseUsageMetadata()
+        )
+        # Thinking tokens are billed as output but counted separately.
+        return Prediction(
+            parsed.label if parsed else None,
+            usage.prompt_token_count or 0,
+            (usage.candidates_token_count or 0)
+            + (usage.thoughts_token_count or 0),
+        )
