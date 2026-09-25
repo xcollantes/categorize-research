@@ -30,7 +30,9 @@ All conditions are scored on the same test set drawn from
 [20 Newsgroups](http://qwone.com/~jason/20Newsgroups/), a collection of Usenet
 posts from the early 1990s. Each post's newsgroup is its ground-truth label.
 Four groups are used, seed 67. This matches the prior experiment so that
-results remain comparable across the two implementations.
+results remain comparable across the two implementations. The standard test
+split has 1,573 posts in these groups; 45 are empty after stripping and are
+dropped, leaving 1,528.
 
 | Label | Description shown to both candidates |
 | --- | --- |
@@ -66,17 +68,21 @@ The conventional LLM will have the following dumped into the user context:
 
 | Condition | Model | Procedure | Labelled data |
 | --- | --- | --- | --- |
-| LLM | OpenAI model via the Responses API | Zero-shot prompt listing the candidate labels; the reply is parsed as a single label | 0 |
-| Embedding | `gemini-embedding-2` | Document and labels embedded with the classification prefix; argmax cosine similarity | 0 |
+| GPT | `gpt-6-sol` via the Responses API | Zero-shot prompt listing the labels with descriptions; output constrained to one label by schema | 0 |
+| Gemini | `gemini-3.1-pro-preview` | Same prompt and schema as GPT | 0 |
+| Embedding | `gemini-embedding-2` | Document and label descriptions embedded with the classification prefix; argmax cosine similarity | 0 |
 
 ### Metrics
 
-- Accuracy and macro-F1, with 95% bootstrap confidence intervals.
-- Cost per document, computed as tokens × list price.
+- Accuracy and macro-F1, with 95% bootstrap confidence intervals, and a paired
+  bootstrap CI on each LLM's macro-F1 minus the embedding's.
+- Cost per document, computed as tokens × list price. LLM output includes
+  reasoning/thinking tokens, which are billed as output.
 - Latency per document, measured as wall-clock time.
 
-LLM replies that match no label, or more than one, are scored as incorrect and
-reported separately rather than coerced to the nearest label.
+The LLM output schema allows only the four labels, so an LLM can fail to label
+a post only by refusing. Refusals and API errors are scored as incorrect and
+counted separately. Errors are left out of the cost and latency averages.
 
 ## Reproduction
 
@@ -84,9 +90,17 @@ reported separately rather than coerced to the nearest label.
 uv sync
 cp .env.example .env    # fill in OPENAI_API_KEY and GEMINI_API_KEY
 
-uv run python -m src.main   # run the experiment, from the repo root
-uv run pytest           # unit tests, no API calls
+uv run pytest                          # unit tests, no API calls
+uv run python -m src.write_dataset     # write the test set to data/test.jsonl
+uv run python -m src.main --limit 5    # smoke test: 5 posts, real API calls
+uv run python -m src.main              # full run, from the repo root
 ```
+
+`src.write_dataset` downloads, filters and shuffles (seed 67) the test set once
+and writes it to `data/test.jsonl`. `src.main` reads that file, so every run
+scores the same posts in the same order. A run appends one result line per post
+to `data/results.jsonl` as it goes, so a crash keeps completed posts. Line *i* of `results.jsonl` is line *i* of
+`data/test.jsonl`; `--limit` keeps a prefix of the same order.
 
 ## Repository layout
 
@@ -94,10 +108,13 @@ uv run pytest           # unit tests, no API calls
 | --- | --- |
 | `src/clients/llm_clients.py` | `GPTClient`, `GeminiClient`: zero-shot classification with structured output |
 | `src/clients/embed_client.py` | `EmbedClient`: `gemini-embedding-2` embedding and nearest-label classification |
-| `src/models/response_models.py` | `Label`, `LABEL_DESCRIPTIONS`, `LLMResponse` |
-| `src/pull_data.py` | Dataset download |
+| `src/models/response_models.py` | `Label`, `LABEL_DESCRIPTIONS`, `LLMResponse`, `Prediction` |
+| `src/models/candidate.py` | `Candidate`: a condition's model ID and token prices |
+| `src/utils/pull_data.py` | Load the test set; save it as JSON Lines |
+| `src/utils/metrics.py` | Accuracy, macro-F1, bootstrap and paired-difference CIs |
+| `src/write_dataset.py` | Standalone script: write the test set to `data/test.jsonl` |
 | `src/main.py` | Experiment entrypoint |
-| `tests/` | Unit tests with the embedding call stubbed |
+| `tests/` | Metric unit tests, no API calls |
 | `docs/index.html` | Public summary, served by GitHub Pages |
 
 ## Publication
