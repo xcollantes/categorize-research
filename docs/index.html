@@ -61,7 +61,7 @@
     h1 { font-size: clamp(2.4rem, 7vw, 3.6rem); font-weight: 800; letter-spacing: -0.01em; }
     h2 { font-size: 1.6rem; font-weight: 750; }
     h3 { font-size: 1.05rem; font-weight: 700; font-stretch: 95%; }
-    p { margin: 0; max-width: 70ch; }
+    p { margin: 0; }
     a { color: var(--accent); text-underline-offset: 3px; }
     a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
     code {
@@ -78,7 +78,7 @@
     .top { display: flex; flex-direction: column; gap: 14px; }
     .lede { font-size: 1.12rem; }
     .takeaways {
-      margin: 0; padding-left: 20px; max-width: 70ch;
+      margin: 0; padding-left: 20px;
       display: flex; flex-direction: column; gap: 6px;
     }
     .jump {
@@ -230,14 +230,13 @@
       font-weight: 800; font-size: 1.6rem; line-height: 1; color: var(--accent);
     }
     .questions div { display: flex; flex-direction: column; gap: 4px; }
-    .questions p { color: var(--muted); font-size: 0.95rem; max-width: none; }
+    .questions p { color: var(--muted); font-size: 0.95rem; }
 
     .pending {
       border: 1px dashed var(--rule); border-radius: 6px; padding: 14px 16px;
       color: var(--muted); font-size: 0.92rem; background: var(--surface);
-      max-width: none;
     }
-    .limits { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; max-width: 70ch; }
+    .limits { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
     footer { font-size: 0.85rem; color: var(--muted); }
 
     @media (max-width: 680px) {
@@ -279,7 +278,6 @@
 <main class="page">
 
   <div class="top">
-    <div class="eyebrow">Research note · Zero-shot topic classification · Sep 2026</div>
     <h1>AI Classifier: Embedding Model vs Frontier LLMs</h1>
     <p class="byline"><span>By <b>Xavier Collantes</b></span><a href="https://xcollantes.substack.com/">Substack</a><a href="https://www.linkedin.com/in/xaviercollantes">LinkedIn</a><a href="https://github.com/xcollantes">GitHub</a></p>
     <p class="lede">Topic classification is usually handed to a frontier LLM with a zero-shot prompt. An embedding model is a far cheaper alternative: embed the document and each label, and pick the label closest to the document. This experiment asks whether that nearest-label classifier matches two frontier LLMs in accuracy, and what it saves in cost and latency.</p>
