@@ -19,9 +19,9 @@ from google.genai import errors as genai_errors
 
 from src.clients.embed_client import EmbedClient
 from src.clients.llm_clients import GeminiClient, GPTClient
-from src.utils.metrics import accuracy, bootstrap_ci, macro_f1, paired_diff_ci
 from src.models.candidate import Candidate
 from src.models.response_models import LABEL_DESCRIPTIONS, Prediction
+from src.utils.metrics import accuracy, bootstrap_ci, macro_f1, paired_diff_ci
 from src.utils.pull_data import DATA_DIR, TEST_PATH, read_test_set
 
 logging.basicConfig(
@@ -198,9 +198,7 @@ def main() -> None:
 
     # Fail before any API client is built, not mid-run.
     if not TEST_PATH.exists():
-        parser.error(
-            f"{TEST_PATH} not found; run `uv run python -m src.write_dataset`"
-        )
+        parser.error(f"{TEST_PATH} not found; run `uv run python -m src.write_dataset`")
 
     # The file is already shuffled and filtered, so results.jsonl line i
     # is test.jsonl line i.
