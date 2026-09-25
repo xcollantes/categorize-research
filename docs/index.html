@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LLMs vs Embeddings</title>
+  <title>AI Classifier: Embedding Model vs Frontier LLMs</title>
   <meta name="description" content="Can a zero-shot embedding classifier match frontier LLMs on topic classification, and at what cost and latency?">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -81,13 +81,46 @@
       margin: 0; padding-left: 20px; max-width: 70ch;
       display: flex; flex-direction: column; gap: 6px;
     }
-    .jump { display: flex; flex-wrap: wrap; gap: 8px; }
-    .jump a {
-      font-family: var(--mono); font-size: 0.8rem; text-decoration: none;
-      color: var(--ink); background: var(--surface);
-      border: 1px solid var(--rule); padding: 5px 10px; border-radius: 4px;
+    .jump {
+      display: flex; flex-direction: column; gap: 8px; padding: 14px 16px;
+      background: var(--surface); border: 1px solid var(--rule); border-radius: 6px;
     }
-    .jump a:hover { border-color: var(--accent); color: var(--accent); }
+    .jump-label {
+      font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .jump-links { display: flex; flex-wrap: wrap; gap: 8px; }
+    .jump a {
+      display: inline-flex; align-items: center; gap: 6px; min-height: 38px;
+      padding: 6px 14px; border-radius: 6px; text-decoration: none;
+      font-size: 0.9rem; font-weight: 600; color: var(--accent);
+      background: var(--accent-soft); border: 1px solid var(--accent);
+      box-shadow: 0 1px 0 var(--rule);
+      transition: background 0.15s, color 0.15s;
+    }
+    .jump a:hover { background: var(--accent); color: var(--surface); }
+    .jump a:active { transform: translateY(1px); }
+    .jump a span { font-size: 0.85em; }
+
+    .defs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .def {
+      display: flex; flex-direction: column; gap: 4px; padding: 12px 14px;
+      background: var(--c-soft); border-left: 4px solid var(--c); border-radius: 4px;
+    }
+    .def.llm { --c: var(--llm); --c-soft: var(--llm-soft); }
+    .def.emb { --c: var(--emb); --c-soft: var(--emb-soft); }
+    .def dt {
+      font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.07em;
+      text-transform: uppercase; font-weight: 500; color: var(--c);
+    }
+    .def dd { margin: 0; font-size: 0.95rem; }
+
+    .byline {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px;
+      font-size: 0.95rem; color: var(--muted);
+    }
+    .byline b { color: var(--ink); }
+    .byline a { font-weight: 500; }
 
     section { display: flex; flex-direction: column; gap: 18px; scroll-margin-top: 16px; }
     .section-head {
@@ -197,7 +230,7 @@
       font-weight: 800; font-size: 1.6rem; line-height: 1; color: var(--accent);
     }
     .questions div { display: flex; flex-direction: column; gap: 4px; }
-    .questions p { color: var(--muted); font-size: 0.95rem; }
+    .questions p { color: var(--muted); font-size: 0.95rem; max-width: none; }
 
     .pending {
       border: 1px dashed var(--rule); border-radius: 6px; padding: 14px 16px;
@@ -208,12 +241,37 @@
     footer { font-size: 0.85rem; color: var(--muted); }
 
     @media (max-width: 680px) {
-      .how { grid-template-columns: 1fr; }
+      .how, .defs { grid-template-columns: 1fr; }
       .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .facts div { border-right: 1px solid var(--rule) !important; border-bottom: 1px solid var(--rule) !important; }
       .facts div:nth-child(2n) { border-right: 0 !important; }
       .facts div:nth-last-child(-n+2) { border-bottom: 0 !important; }
       .row, .axis-ticks { grid-template-columns: 7.5rem 1fr 3.8rem; gap: 8px; }
+
+      /* Tables become one block per row; no sideways scrolling. */
+      .table-wrap { overflow-x: visible; }
+      .conditions, .results { min-width: 0; }
+      .table-wrap thead {
+        position: absolute; width: 1px; height: 1px; overflow: hidden;
+        clip: rect(0 0 0 0); white-space: nowrap;
+      }
+      .table-wrap table, .table-wrap tbody, .table-wrap tr,
+      .table-wrap th, .table-wrap td { display: block; }
+      .table-wrap tr { padding: 12px 14px; border-bottom: 1px solid var(--rule); }
+      .table-wrap tbody tr:first-child { border-radius: 5px 5px 0 0; }
+      .table-wrap tbody tr:last-child { border-bottom: 0; border-radius: 0 0 5px 5px; }
+      .table-wrap th, .table-wrap td { padding: 0; border: 0; white-space: normal; }
+      .table-wrap tbody th { margin-bottom: 6px; }
+      .table-wrap td + td { margin-top: 10px; }
+      .table-wrap td[data-label]::before {
+        content: attr(data-label); display: block; margin-bottom: 1px;
+        font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.07em;
+        text-transform: uppercase; color: var(--muted);
+      }
+      tr.emb { background: var(--accent-soft); }
+      .results tr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+      .results tbody th { grid-column: 1 / -1; margin-bottom: 0; }
+      .results td + td { margin-top: 0; }
     }
   </style>
 </head>
@@ -222,15 +280,23 @@
 
   <div class="top">
     <div class="eyebrow">Research note · Zero-shot topic classification · Sep 2026</div>
-    <h1>LLMs vs Embeddings</h1>
+    <h1>AI Classifier: Embedding Model vs Frontier LLMs</h1>
+    <p class="byline"><span>By <b>Xavier Collantes</b></span><a href="https://xcollantes.substack.com/">Substack</a><a href="https://www.linkedin.com/in/xaviercollantes">LinkedIn</a><a href="https://github.com/xcollantes">GitHub</a></p>
     <p class="lede">Topic classification is usually handed to a frontier LLM with a zero-shot prompt. An embedding model is a far cheaper alternative: embed the document and each label, and pick the label closest to the document. This experiment asks whether that nearest-label classifier matches two frontier LLMs in accuracy, and what it saves in cost and latency.</p>
+    <dl class="defs">
+      <div class="def llm"><dt>Frontier LLM</dt><dd>A model that <b>writes</b> text. It reads the post and the list of labels, then replies with the label it thinks fits. Every answer is generated, which costs output tokens and time.</dd></div>
+      <div class="def emb"><dt>Embedding model</dt><dd>A model that <b>can't write</b> anything. It turns text into a list of numbers (a vector) where similar meanings land close together. It classifies by finding the label whose vector is nearest the post's.</dd></div>
+    </dl>
     <ul class="takeaways">
       <li><b>Three candidates, one test set.</b> <code>gpt-6-sol</code>, <code>gemini-3.1-pro-preview</code> and <code>gemini-embedding-2</code> classify the same 1,528 Usenet posts.</li>
       <li><b>No training data.</b> Every candidate sees only the label names and a one-line description of each, so the comparison is about the method, not a trained classifier.</li>
       <li><b>The embedding is 10× cheaper per input token</b> at list price, and it produces no output tokens at all.</li>
     </ul>
-    <nav class="jump" aria-label="Jump to a section">
-      <a href="#questions">Questions</a><a href="#method">Method</a><a href="#dataset">Dataset</a><a href="#metrics">Metrics</a><a href="#results">Results</a><a href="#limitations">Limitations</a>
+    <nav class="jump" aria-labelledby="jump-label">
+      <span class="jump-label" id="jump-label">Jump to a section</span>
+      <div class="jump-links">
+        <a href="#questions">Questions <span aria-hidden="true">↓</span></a><a href="#method">Method <span aria-hidden="true">↓</span></a><a href="#dataset">Dataset <span aria-hidden="true">↓</span></a><a href="#metrics">Metrics <span aria-hidden="true">↓</span></a><a href="#results">Results <span aria-hidden="true">↓</span></a><a href="#limitations">Limitations <span aria-hidden="true">↓</span></a>
+      </div>
     </nav>
   </div>
 
@@ -255,9 +321,9 @@
       <table class="conditions">
         <thead><tr><th>Candidate</th><th>Model</th><th>Procedure</th></tr></thead>
         <tbody>
-          <tr><th>GPT <span class="tag llm">LLM</span></th><td><code>gpt-6-sol</code></td><td>Zero-shot prompt listing the labels with descriptions; the reply schema allows only the four labels</td></tr>
-          <tr><th>Gemini <span class="tag llm">LLM</span></th><td><code>gemini-3.1-pro-preview</code></td><td>Same prompt and schema as GPT</td></tr>
-          <tr class="emb"><th>Embedding <span class="tag emb">Embed</span></th><td><code>gemini-embedding-2</code></td><td>Post and label descriptions embedded with the classification prefix; the closest label by cosine similarity wins</td></tr>
+          <tr><th>GPT <span class="tag llm">LLM</span></th><td data-label="Model"><code>gpt-6-sol</code></td><td data-label="Procedure">Zero-shot prompt listing the labels with descriptions; the reply schema allows only the four labels</td></tr>
+          <tr><th>Gemini <span class="tag llm">LLM</span></th><td data-label="Model"><code>gemini-3.1-pro-preview</code></td><td data-label="Procedure">Same prompt and schema as GPT</td></tr>
+          <tr class="emb"><th>Embedding <span class="tag emb">Embed</span></th><td data-label="Model"><code>gemini-embedding-2</code></td><td data-label="Procedure">Post and label descriptions embedded with the classification prefix; the closest label by cosine similarity wins</td></tr>
         </tbody>
       </table>
     </div>
@@ -331,9 +397,9 @@
       <table class="results">
         <thead><tr><th>Candidate</th><th>Accuracy</th><th>Macro-F1</th><th>Cost / doc</th><th>Latency</th></tr></thead>
         <tbody>
-          <tr><th>GPT</th><td>—</td><td>—</td><td>—</td><td>—</td></tr>
-          <tr><th>Gemini</th><td>—</td><td>—</td><td>—</td><td>—</td></tr>
-          <tr class="emb"><th>Embedding</th><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><th>GPT</th><td data-label="Accuracy">—</td><td data-label="Macro-F1">—</td><td data-label="Cost / doc">—</td><td data-label="Latency">—</td></tr>
+          <tr><th>Gemini</th><td data-label="Accuracy">—</td><td data-label="Macro-F1">—</td><td data-label="Cost / doc">—</td><td data-label="Latency">—</td></tr>
+          <tr class="emb"><th>Embedding</th><td data-label="Accuracy">—</td><td data-label="Macro-F1">—</td><td data-label="Cost / doc">—</td><td data-label="Latency">—</td></tr>
         </tbody>
       </table>
     </div>
@@ -351,13 +417,6 @@
       <li>List prices change; cost figures hold only at the time of the run.</li>
       <li>The confidence intervals cover which posts were sampled, not LLM randomness between reruns or the choice of prompt.</li>
     </ul>
-  </section>
-
-  <section id="prior">
-    <div class="section-head">
-      <h2>Prior work</h2>
-    </div>
-    <p>This is a simplified reimplementation of <a href="https://github.com/xcollantes/classify-llm-exp">classify-llm-exp</a>, which trained a logistic regression over <code>gemini-embedding-001</code> vectors and ablated its <code>task_type</code> parameter.</p>
   </section>
 
   <footer>Xavier Collantes · <a href="https://github.com/xcollantes/categorize-research">Source on GitHub</a></footer>
