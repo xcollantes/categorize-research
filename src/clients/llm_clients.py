@@ -8,7 +8,7 @@ from google import genai
 from google.genai import types
 from openai import OpenAI
 
-from models.response_models import Label, LLMResponse
+from src.models.response_models import Label, LLMResponse
 
 logger: logging.Logger = logging.getLogger(__name__)
 
