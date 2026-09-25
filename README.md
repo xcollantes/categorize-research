@@ -84,7 +84,7 @@ reported separately rather than coerced to the nearest label.
 uv sync
 cp .env.example .env    # fill in OPENAI_API_KEY and GEMINI_API_KEY
 
-uv run python main.py   # run the experiment
+uv run python -m src.main   # run the experiment, from the repo root
 uv run pytest           # unit tests, no API calls
 ```
 
@@ -92,9 +92,11 @@ uv run pytest           # unit tests, no API calls
 
 | File | Purpose |
 | --- | --- |
-| `llm_client.py` | `LLMClient`: text generation through the OpenAI SDK |
-| `embed_client.py` | `EmbedClient`: `gemini-embedding-2` embedding and nearest-label classification |
-| `main.py` | Experiment entrypoint |
+| `src/clients/llm_clients.py` | `GPTClient`, `GeminiClient`: zero-shot classification with structured output |
+| `src/clients/embed_client.py` | `EmbedClient`: `gemini-embedding-2` embedding and nearest-label classification |
+| `src/models/response_models.py` | `Label`, `LABEL_DESCRIPTIONS`, `LLMResponse` |
+| `src/pull_data.py` | Dataset download |
+| `src/main.py` | Experiment entrypoint |
 | `tests/` | Unit tests with the embedding call stubbed |
 | `docs/index.html` | Public summary, served by GitHub Pages |
 
