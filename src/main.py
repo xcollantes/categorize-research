@@ -152,6 +152,7 @@ def run(pairs: list[tuple[str, str]], path: pathlib.Path) -> list[dict]:
     }
 
     rows: list[dict] = []
+
     # "x" refuses to open an existing file, so no run overwrites another.
     with path.open("x", encoding="utf-8") as f:
         for i, (text, gold) in enumerate(pairs):
