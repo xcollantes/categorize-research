@@ -48,7 +48,15 @@ class EmbedClient:
         return [e.values for e in result.embeddings]
 
     def classify(self, text: str, labels: list[str]) -> str:
-        """Return the label whose embedding is closest to the text."""
+        """Return the label whose embedding is closest to the text.
+
+        Args:
+            text: The text to classify.
+            labels: List of possible labels.
+
+        Returns:
+            The label whose embedding is closest to the text.
+        """
 
         text_vec, *label_vecs = self.embed([text, *labels])
         scores: list[float] = [_cosine(text_vec, v) for v in label_vecs]
