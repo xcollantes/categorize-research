@@ -98,9 +98,10 @@ uv run python -m src.main              # full run, from the repo root
 
 `src.write_dataset` downloads, filters and shuffles (seed 67) the test set once
 and writes it to `data/test.jsonl`. `src.main` reads that file, so every run
-scores the same posts in the same order. A run appends one result line per post
-to `data/results.jsonl` as it goes, so a crash keeps completed posts. Line *i* of `results.jsonl` is line *i* of
-`data/test.jsonl`; `--limit` keeps a prefix of the same order.
+scores the same posts in the same order. Each run writes a new
+`data/results-YYYYMMDD-HHMMSS.jsonl`, one line per post as it goes, so a crash
+keeps completed posts and no run overwrites another. Line *i* of a results file
+is line *i* of `data/test.jsonl`; `--limit` keeps a prefix of the same order.
 
 ## Repository layout
 

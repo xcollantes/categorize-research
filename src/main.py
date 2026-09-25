@@ -1,7 +1,40 @@
 """Run the LLM vs embedding classification experiment.
 
 Each post is classified by every condition in turn, one result line is appended
-to data/results.jsonl per post, and a summary is printed.
+to a new timestamped data/results-YYYYMMDD-HHMMSS.jsonl per post, and a
+summary is printed.
+
+Usage, from the repo root:
+
+    # 0. Install dependencies and set up .env with API keys.
+
+    uv venv
+    uv sync
+    source venv/bin/activate
+
+    # 1. Once: write the shuffled test set to data/test.jsonl.
+
+    uv run python -m src.write_dataset
+
+    # 2. Smoke test: 5 posts, checks all three APIs (fractions of a cent).
+
+    uv run python -m src.main --limit 5
+
+    # 3. Pilot: first 200 posts, to estimate full-run time and cost.
+
+    uv run python -m src.main --limit 200
+
+    # 4. Full run: all 1,528 posts.
+
+    uv run python -m src.main
+
+--limit scores the first N posts of data/test.jsonl; the file is already
+shuffled (seed 67), so any N is a random, repeatable sample. Needs
+OPENAI_API_KEY and GEMINI_API_KEY in .env. Each run writes its own
+data/results-YYYYMMDD-HHMMSS.jsonl, so earlier runs are never overwritten.
+
+Run it as a module (-m), not as `python src/main.py`; the `src.` imports
+only resolve from the repo root.
 """
 
 import argparse
@@ -54,7 +87,11 @@ EMBED = Candidate(
 )
 CANDIDATES: tuple[Candidate, ...] = (GPT, GEMINI, EMBED)
 
-RESULTS_PATH: pathlib.Path = DATA_DIR / "results.jsonl"
+
+def results_path() -> pathlib.Path:
+    """Return a new timestamped results file path, e.g. results-20260924-181500.jsonl."""
+    return DATA_DIR / f"results-{time.strftime('%Y%m%d-%H%M%S')}.jsonl"
+
 
 # Failed call is recorded and the run continues, so one network blip does not
 # throw away hours of paid calls.
@@ -97,8 +134,8 @@ def timed(classify: Callable[[str], Prediction], text: str) -> dict:
     return {**pred._asdict(), "latency_s": latency_s, "error": error}
 
 
-def run(pairs: list[tuple[str, str]]) -> list[dict]:
-    """Classify every post with every condition, saving as it goes."""
+def run(pairs: list[tuple[str, str]], path: pathlib.Path) -> list[dict]:
+    """Classify every post with every condition, saving to `path` as it goes."""
     gpt: GPTClient = GPTClient(GPT.model_id)
     gemini: GeminiClient = GeminiClient(GEMINI.model_id)
     embed: EmbedClient = EmbedClient(EMBED.model_id)
@@ -107,6 +144,7 @@ def run(pairs: list[tuple[str, str]]) -> list[dict]:
     label_vecs: dict[str, list[float]] = dict(
         zip(LABEL_DESCRIPTIONS, embed.embed(list(LABEL_DESCRIPTIONS.values())))
     )
+
     conditions: dict[str, Callable[[str], Prediction]] = {
         GPT.name: lambda t: gpt.classify(build_prompt(t)),
         GEMINI.name: lambda t: gemini.classify(build_prompt(t)),
@@ -114,7 +152,8 @@ def run(pairs: list[tuple[str, str]]) -> list[dict]:
     }
 
     rows: list[dict] = []
-    with RESULTS_PATH.open("w", encoding="utf-8") as f:
+    # "x" refuses to open an existing file, so no run overwrites another.
+    with path.open("x", encoding="utf-8") as f:
         for i, (text, gold) in enumerate(pairs):
             row: dict = {"index": i, "gold": gold}
 
@@ -124,6 +163,7 @@ def run(pairs: list[tuple[str, str]]) -> list[dict]:
             # Counted outside the timer so latency is the embed call alone.
             try:
                 row[EMBED.name]["input_tokens"] = embed.count_tokens(text)
+
             except API_ERRORS as e:
                 logger.warning("Token count failed: %r", e)
 
@@ -188,7 +228,10 @@ def _with_ci(gold: list[str], pred: list, metric: Callable) -> str:
 def main() -> None:
     """Load the test set, run every condition, and print the summary."""
 
-    parser: argparse.ArgumentParser = argparse.ArgumentParser(description=__doc__)
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument(
         "--limit",
         type=int,
@@ -200,12 +243,14 @@ def main() -> None:
     if not TEST_PATH.exists():
         parser.error(f"{TEST_PATH} not found; run `uv run python -m src.write_dataset`")
 
-    # The file is already shuffled and filtered, so results.jsonl line i
-    # is test.jsonl line i.
+    # The file is already shuffled and filtered, so line i of the results
+    # file is test.jsonl line i.
     pairs: list[tuple[str, str]] = read_test_set(limit=args.limit)
+    path: pathlib.Path = results_path()
+    logger.info("Writing results to %s", path)
 
     # Run the actual experiment and print the summary.
-    summarize(run(pairs))
+    summarize(run(pairs, path))
 
 
 if __name__ == "__main__":
